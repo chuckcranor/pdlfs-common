@@ -183,6 +183,6 @@ jobs:
                 -DCMAKE_C_COMPILER="$CI_COMPILER" \
                 -DPDLFS_RADOS=ON \
                 -DPDLFS_SHARED_LIBS=ON \
-                -DBUILD_TESTS=ON .. \
+                -DBUILD_TESTS=ON ..
           echo "cmake done"
 
