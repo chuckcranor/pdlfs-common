@@ -104,19 +104,32 @@ jobs:
           mkdir gh-tmp
           cd gh-tmp && git clone https://github.com/pdlfs/deltafs-umbrella
 
-      - name: umbrella verify
-        run: |
-          ls gh-tmp/deltafs-umbrella
-          echo YO ${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}
-
       - name: umbrella cache restore
         uses: actions/cache@v2
         id: cache-umbrella
         with:
           path: /tmp/cache
-          key: ${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ matrix.mpi }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-cache
+          key: ${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ matrix.mpi }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-c1
 
       - name: umbrella cache rebuild
         if: steps.cache-umbrella.outputs.cache-hit != 'true'
-        run: echo NEED TO REBUILD CACHE 
-
+        run: |
+          echo rebuilding umbrella cache
+          cd gh-tmp/deltafs-umbrella
+          mkdir bootstrap/b
+          cd bootstrap/b
+          cmake -DCMAKE_INSTALL_PREFIX=/tmp/cache \
+             -DBOOTSTRAP="gflags;glog;snappy" -DSNAPPY_TAG=1.1.8 ..
+          make
+          cd ../..
+          mkdir b
+          cd b
+          cmake -DCMAKE_INSTALL_PREFIX=/tmp/cache \
+              -DMERCURY_NA_INITIALLY_ON="bmi;sm" \
+              -DMERCURY_SELF_FORWARD=ON \
+              -DMERCURY_CHECKSUM=ON \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              ..
+          make mercury
+          ls /tmp/cache
+          ls /tmp/cache/lib
