@@ -73,6 +73,12 @@ jobs:
         run: echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
 
       #
+      # checkout our git tree
+      #
+      - name: github checkout source
+        uses: actions/checkout@v2
+
+      #
       # set up environment using apt-get to install packages we need
       # but don't build ourselves
       #
