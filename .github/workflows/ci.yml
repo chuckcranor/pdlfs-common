@@ -133,5 +133,5 @@ jobs:
           make mercury
 
       - name: umbrella cache lib list
-        run: ls -C /tmp/cache/*.so
+        run: ls -C /tmp/cache/lib/*.so
 
