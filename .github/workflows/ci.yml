@@ -96,3 +96,19 @@ jobs:
           cmake --version
           git --version
 
+      - name: umbrella checkout
+        run: |
+          cd /tmp
+          git clone https://github.com/pdlfs/deltafs-umbrella
+
+      - name: umbrella cache restore
+        uses: actions/cache@v2
+        id: cache-umbrella
+        with:
+          path: /tmp/cache
+          key: ${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ matrix.mpi }}-${{ hashFiles('/tmp/deltafs-umbrella/CMakeLists.txt') }}-cache
+
+      - name: umbrella cache rebuild
+        if: steps.cache-umbrella.outputs.cache-hit != 'true'
+        run: echo NEED TO REBUILD CACHE 
+
