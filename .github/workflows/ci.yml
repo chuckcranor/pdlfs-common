@@ -192,3 +192,9 @@ jobs:
                 -DBUILD_TESTS=ON ..
           echo "cmake done"
 
+      #
+      # build project
+      #
+      - name: build project
+        run: cd b && make
+
