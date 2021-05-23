@@ -98,14 +98,14 @@ jobs:
 
       - name: umbrella checkout
         run: |
-          cd /tmp
-          git clone https://github.com/pdlfs/deltafs-umbrella
-          ls /tmp/deltafs-umbrella/CMakeLists.txt
+          mkdir gh-tmp
+          cd gh-tmp && git clone https://github.com/pdlfs/deltafs-umbrella
+          ls gh-tmp/deltafs-umbrella/CMakeLists.txt
 
       - name: umbrella verify
         run: |
           ls /tmp/deltafs-umbrella
-          echo YO ${{ hashFiles('/tmp/deltafs-umbrella/CMakeLists.txt') }}
+          echo YO ${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}
 
       - name: umbrella cache restore
         uses: actions/cache@v2
