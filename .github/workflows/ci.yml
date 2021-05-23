@@ -96,14 +96,13 @@ jobs:
           cmake --version
           git --version
 
+      # XXX: we have to put umbrella in GITHUB_WORKSPACE because
+      # hashFiles() only works on files in that directory.  we
+      # make a gh-tmp directory for this.
       - name: umbrella checkout
         run: |
-          pwd
           mkdir gh-tmp
-          ( cd gh-tmp && git clone https://github.com/pdlfs/deltafs-umbrella )
-          pwd
-          ls
-          ls gh-tmp/deltafs-umbrella/CMakeLists.txt
+          cd gh-tmp && git clone https://github.com/pdlfs/deltafs-umbrella
 
       - name: umbrella verify
         run: |
