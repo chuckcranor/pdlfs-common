@@ -1,0 +1,98 @@
+#
+# ci.yml  github actions continuous integration for pdlfs-common
+# 22-May-2021  chuck@ece.cmu.edu
+#
+
+# workflow name.  user defined string that displays on repo's action page.
+name: CI
+
+# workflow trigger.  when to run?  'branches' limits scope to given branches.
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+# job(s) to run when workflow is triggered.
+jobs:
+
+  # first (and only) job for this workflow: buildtest
+  buildtest:
+
+    # create a build matrix for this job.   disable fail-fast so we
+    # do not fail the whole job if one branch of the matrix fails.
+    # you can use "include" to add branches to matrix and "exclude"
+    # to prune branches you do not want to build.
+    # XXX: putting lists in exclude doesn't work
+    #       e.g. exclude:
+    #              - compiler: [gcc-7, gcc-8]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [RelWithDebInfo]
+        compiler: [gcc-9, gcc-10, clang-10, clang-11]
+        mpi: [mpich, openmpi]
+        os: [ubuntu-latest]
+        # add some debug cases.  XXX: include/exclude don't take lists
+        # so we have to expand each case out.  yuck.
+        include:
+          - build_type: Debug
+            compiler: gcc-9
+            mpi: mpich
+            os: ubuntu-latest
+          - build_type: Debug
+            compiler: gcc-10
+            mpi: mpich
+            os: ubuntu-latest
+          - build_type: Debug
+            compiler: clang-10
+            mpi: mpich
+            os: ubuntu-latest
+          - build_type: Debug
+            compiler: clang-11
+            mpi: mpich
+            os: ubuntu-latest
+
+    # what os to run on (reference matrix above for this)
+    runs-on: ${{ matrix.os }}
+
+    # environment variables to provide to the job
+    env:
+      CI_BUILDTYPE: ${{ matrix.build_type }}
+      CI_COMPILER: ${{ matrix.compiler }}
+      CI_MPI: ${{ matrix.mpi }}
+
+    # sequential set of steps (i.e. commands) for this job
+    steps:
+      - name: display selected environment config
+        run: echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
+
+      # note: clang includes C++, but g++ is its own package.
+      # XXX: run did not like /bin/sh case statement (syntax err, quoting?)
+      - name: setup selected environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y $CI_COMPILER
+          compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
+          if [ "$compbase" = "gcc" ]; then
+            cxx=`echo $CI_COMPILER| sed -e 's/^gcc/g++/'`
+            sudo apt-get install -y $cxx
+          fi
+          if [ "$CI_MPI" = "openmpi" ]; then
+            sudo apt-get install -y ${CI_MPI}-bin lib${CI_MPI}-dev
+          else
+            sudo apt-get install -y $CI_MPI lib${CI_MPI}-dev
+          fi
+          sudo apt-get install -y cmake automake
+          sudo apt-get install -y libibverbs-dev libibverbs-dev
+          sudo apt-get install -y libpapi-dev libnuma-dev
+          sudo apt-get install -y librados-dev
+
+      - name: version check
+        run: |
+          automake --version
+          cmake --version
+          git --version
+
