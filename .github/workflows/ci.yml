@@ -105,6 +105,7 @@ jobs:
       - name: umbrella verify
         run: |
           ls /tmp/deltafs-umbrella
+          echo YO ${{ hashFiles('/tmp/deltafs-umbrella/CMakeLists.txt') }}
 
       - name: umbrella cache restore
         uses: actions/cache@v2
