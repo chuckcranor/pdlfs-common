@@ -66,11 +66,19 @@ jobs:
 
     # sequential set of steps (i.e. commands) for this job
     steps:
+      #
+      # dump out our currently selected environment
+      #
       - name: display selected environment config
         run: echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
 
+      #
+      # set up environment using apt-get to install packages we need
+      # but don't build ourselves
+      #
       # note: clang includes C++, but g++ is its own package.
       # XXX: run did not like /bin/sh case statement (syntax err, quoting?)
+      #
       - name: setup selected environment
         run: |
           sudo apt-get update
@@ -90,20 +98,32 @@ jobs:
           sudo apt-get install -y libpapi-dev libnuma-dev
           sudo apt-get install -y librados-dev
 
+      #
+      # print out versions of some key programs (just for reference)
+      #
       - name: version check
         run: |
           automake --version
           cmake --version
           git --version
 
+      #
+      # checkout an umbrella for packages we are going build (and cache)
+      # ourselves.
+      #
       # XXX: we have to put umbrella in GITHUB_WORKSPACE because
-      # hashFiles() only works on files in that directory.  we
-      # make a gh-tmp directory for this.
+      # hashFiles() only works on files in that directory (I'd rather
+      # put it in /tmp).  we make a gh-tmp directory for this.
+      #
       - name: umbrella checkout
         run: |
           mkdir gh-tmp
           cd gh-tmp && git clone https://github.com/pdlfs/deltafs-umbrella
 
+      #
+      # attempt to restore built umbrella packages from cache to save time.
+      # to force update, just change the suffix on the "key" below...
+      #
       - name: umbrella cache restore
         uses: actions/cache@v2
         id: cache-umbrella
@@ -111,6 +131,10 @@ jobs:
           path: /tmp/cache
           key: ${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ matrix.mpi }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-c1
 
+      #
+      # on a cache miss, build the specified umbrella packages.  we can
+      # use the bootstrap or the main umbrella to do it, as shown below.
+      #
       - name: umbrella cache rebuild
         if: steps.cache-umbrella.outputs.cache-hit != 'true'
         run: |
@@ -132,6 +156,33 @@ jobs:
               ..
           make mercury
 
+      #
+      # after umbrella cache restore or build, list libs in umbrella
+      # cache just for reference.
+      #
       - name: umbrella cache lib list
         run: ls -C /tmp/cache/lib/*.so
+
+      #
+      # now we have everything we need, so we can configure our project
+      #
+      - name: configure project
+        run: |
+          compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
+          if [ "$compbase" = "gcc" ]; then
+            cxx=`echo $CI_COMPILER| sed -e 's/^gcc/g++/'`
+          elif [ "$compbase" = "clang" ]; then
+            cxx=`echo $CI_COMPILER| sed -e 's/^clang/clang++/'`
+          else
+            echo "compbase error $compbase - this cannot happen"
+          fi
+          mkdir b && cd b
+          cmake -DCMAKE_INSTALL_PREFIX=/tmp/pdlfs-common \
+                -DCMAKE_PREFIX_PATH=/tmp/cache \
+                -DCMAKE_CXX_COMPILER=$cxx \
+                -DCMAKE_C_COMPILER=$CI_COMPILER \
+                -DPDLFS_RADOS=ON \
+                -DPDLFS_SHARED_LIBS=ON \
+                -DBUILD_TESTS=ON \
+		..
 
