@@ -183,15 +183,12 @@ jobs:
             echo "compbase error $compbase - this cannot happen"
           fi
           mkdir b && cd b
-          pwd
-          ls .
-          ls ..
           cmake -DCMAKE_INSTALL_PREFIX=/tmp/pdlfs-common \
                 -DCMAKE_PREFIX_PATH=/tmp/cache \
                 -DCMAKE_CXX_COMPILER="$cxx" \
                 -DCMAKE_C_COMPILER="$CI_COMPILER" \
                 -DPDLFS_RADOS=ON \
-                -DPDLFS_SHARED_LIBS=ON \
+                -DBUILD_SHARED_LIBS=ON \
                 -DBUILD_TESTS=ON ..
           echo "cmake done"
 
