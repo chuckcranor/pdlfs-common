@@ -196,5 +196,10 @@ jobs:
       # build project
       #
       - name: build project
-        run: cd b && make
+        run: date && cd b && make && date
 
+      #
+      # run tests
+      #
+      - name: run tests
+        run: date && cd b && ctest -VV --output-on-failure && date
