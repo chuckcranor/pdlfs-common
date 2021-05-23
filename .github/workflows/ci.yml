@@ -104,7 +104,7 @@ jobs:
 
       - name: umbrella verify
         run: |
-          ls /tmp/deltafs-umbrella
+          ls gh-tmp/deltafs-umbrella
           echo YO ${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}
 
       - name: umbrella cache restore
@@ -112,7 +112,7 @@ jobs:
         id: cache-umbrella
         with:
           path: /tmp/cache
-          key: ${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ matrix.mpi }}-${{ hashFiles('/tmp/deltafs-umbrella/CMakeLists.txt') }}-cache
+          key: ${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ matrix.mpi }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-cache
 
       - name: umbrella cache rebuild
         if: steps.cache-umbrella.outputs.cache-hit != 'true'
