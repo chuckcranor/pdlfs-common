@@ -68,22 +68,23 @@ jobs:
     steps:
       #
       # dump out our currently selected environment and add
-      # CI_CC and CI_CXX to our environment using GITHUB_ENV.
+      # CI_COMPBASE, CI_CC, and CI_CXX to our environment using GITHUB_ENV.
       #
       - name: display selected environment config
         run: |
           echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
           cicc=$CI_COMPILER
-          compbase=`echo $cicc | sed -e 's/-.*//'`
-          if [ "$compbase" = "gcc" ]; then
+          cicompbase=`echo $cicc | sed -e 's/-.*//'`
+          if [ "$cicompbase" = "gcc" ]; then
             cicxx=`echo $cicc | sed -e 's/^gcc/g++/'`
-          elif [ "$compbase" = "clang" ]; then
+          elif [ "$cicompbase" = "clang" ]; then
             cicxx=`echo $cicc | sed -e 's/^clang/clang++/'`
           else
-            echo "compbase error $compbase - unknown compiler"
+            echo "compbase error $cicompbase - unknown compiler"
           fi
-          echo "CI_CC=$cicc"    >> $GITHUB_ENV
-          echo "CI_CXX=$cicxx"  >> $GITHUB_ENV
+          echo "CI_COMPBASE=$cicompbase"  >> $GITHUB_ENV
+          echo "CI_CC=$cicc"              >> $GITHUB_ENV
+          echo "CI_CXX=$cicxx"            >> $GITHUB_ENV
           echo "cxx=$cicxx"
 
       #
@@ -101,6 +102,7 @@ jobs:
       #
       - name: setup selected environment
         run: |
+          printenv | fgrep CI_
           sudo apt-get update
           sudo apt-get install -y $CI_COMPILER
           compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
