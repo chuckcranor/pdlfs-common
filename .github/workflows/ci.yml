@@ -67,8 +67,8 @@ jobs:
     # sequential set of steps (i.e. commands) for this job
     steps:
       #
-      # dump out our currently selected environment and add
-      # CI_COMPBASE, CI_CC, and CI_CXX to our environment using GITHUB_ENV.
+      # dump out our currently selected environment and add CI_COMPBASE,
+      # CI_CC, and CI_CXX to our environment using GITHUB_ENV.
       #
       - name: display selected environment config
         run: |
@@ -80,12 +80,11 @@ jobs:
           elif [ "$cicompbase" = "clang" ]; then
             cicxx=`echo $cicc | sed -e 's/^clang/clang++/'`
           else
-            echo "compbase error $cicompbase - unknown compiler"
+            echo "compbase error $cicompbase - unknown compiler basename"
           fi
           echo "CI_COMPBASE=$cicompbase"  >> $GITHUB_ENV
           echo "CI_CC=$cicc"              >> $GITHUB_ENV
           echo "CI_CXX=$cicxx"            >> $GITHUB_ENV
-          echo "cxx=$cicxx"
 
       #
       # checkout our git tree
@@ -102,13 +101,10 @@ jobs:
       #
       - name: setup selected environment
         run: |
-          printenv | fgrep CI_
           sudo apt-get update
           sudo apt-get install -y $CI_COMPILER
-          compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
-          if [ "$compbase" = "gcc" ]; then
-            cxx=`echo $CI_COMPILER| sed -e 's/^gcc/g++/'`
-            sudo apt-get install -y $cxx
+          if [ "$CI_COMPBASE" = "gcc" ]; then
+            sudo apt-get install -y $CI_CXX
           fi
           if [ "$CI_MPI" = "openmpi" ]; then
             sudo apt-get install -y ${CI_MPI}-bin lib${CI_MPI}-dev
@@ -121,13 +117,16 @@ jobs:
           sudo apt-get install -y librados-dev
 
       #
-      # print out versions of some key programs (just for reference)
+      # print out versions of some key programs (just for reference).
+      # also print out all CI_* env vars.
       #
       - name: version check
         run: |
           automake --version
           cmake --version
           git --version
+          mpirun --version
+          printenv | egrep '^CI_'
 
       #
       # checkout an umbrella for packages we are going build (and cache)
@@ -144,14 +143,18 @@ jobs:
 
       #
       # attempt to restore built umbrella packages from cache to save time.
-      # to force update, just change the suffix on the "key" below...
+      # to force update, just change the suffix on the "key" below.
+      # we build umbrella packages with the default system provided compiler.
+      # for the key we use:
+      #    - target OS
+      #    - target MPI
       #
       - name: umbrella cache restore
         uses: actions/cache@v2
         id: cache-umbrella
         with:
           path: /tmp/cache
-          key: ${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ matrix.mpi }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-c1
+          key: ${{ runner.os }}-${{ matrix.mpi }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-c1
 
       #
       # on a cache miss, build the specified umbrella packages.  we can
@@ -165,6 +168,7 @@ jobs:
           mkdir bootstrap/b
           cd bootstrap/b
           cmake -DCMAKE_INSTALL_PREFIX=/tmp/cache \
+             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
              -DBOOTSTRAP="gflags;glog;snappy" -DSNAPPY_TAG=1.1.8 ..
           make
           cd ../..
@@ -190,20 +194,11 @@ jobs:
       #
       - name: configure project
         run: |
-          compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
-          if [ "$compbase" = "gcc" ]; then
-            cxx=`echo $CI_COMPILER| sed -e 's/^gcc/g++/'`
-          elif [ "$compbase" = "clang" ]; then
-            cxx=`echo $CI_COMPILER| sed -e 's/^clang/clang++/'`
-          else
-            echo "compbase error $compbase - this cannot happen"
-          fi
           mkdir b && cd b
+          export CC=$CI_CC CXX=$CI_CXX
           cmake -DCMAKE_INSTALL_PREFIX=/tmp/pdlfs-common \
                 -DCMAKE_PREFIX_PATH=/tmp/cache \
                 -DCMAKE_BUILD_TYPE="$CI_BUILDTYPE" \
-                -DCMAKE_CXX_COMPILER="$cxx" \
-                -DCMAKE_C_COMPILER="$CI_COMPILER" \
                 -DPDLFS_DFS_COMMON=ON \
                 -DPDLFS_MERCURY_RPC=ON \
                 -DPDLFS_RADOS=ON \
