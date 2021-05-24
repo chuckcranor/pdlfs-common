@@ -188,6 +188,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE="$CI_BUILDTYPE" \
                 -DCMAKE_CXX_COMPILER="$cxx" \
                 -DCMAKE_C_COMPILER="$CI_COMPILER" \
+                -DPDLFS_DFS_COMMON=ON \
                 -DPDLFS_MERCURY_RPC=ON \
                 -DPDLFS_RADOS=ON \
                 -DBUILD_SHARED_LIBS=ON \
