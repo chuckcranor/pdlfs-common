@@ -66,29 +66,23 @@ jobs:
 
     # sequential set of steps (i.e. commands) for this job
     steps:
-###TMP
-      - name: Set the value
-        id: step_one
-        run: |
-            ls -ls $GITHUB_ENV
-            echo "FOO=yellow" >> $GITHUB_ENV
-            echo "ENV IS $GITHUB_ENV"
-            ls -ls $GITHUB_ENV
-      - name: Use the value
-        id: step_two
-        run: |
-            echo "${{ env.FOO }}" # This will output 'yellow'
-            printenv | egrep 'FOO|ENV'
-            echo CONTENT
-            cat $GITHUB_ENV
-            echo DONE
-            ls -ls $GITHUB_ENV
-###TMP
       #
-      # dump out our currently selected environment
+      # dump out our currently selected environment and add
+      # CI_CC and CI_CXX to our environment using GITHUB_ENV.
       #
       - name: display selected environment config
-        run: echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
+        run: |
+          echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
+          compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
+          if [ "$compbase" = "gcc" ]; then
+            cxx=`echo $CI_COMPILER| sed -e 's/^gcc/g++/'`
+          elif [ "$compbase" = "clang" ]; then
+            cxx=`echo $CI_COMPILER| sed -e 's/^clang/clang++/'`
+          else
+            echo "compbase error $compbase - this cannot happen"
+          fi
+          echo "CI_CC=\"$CI_COMPILER\"" >> $GITHUB_ENV
+          echo "CI_CXX=\"$cxx\"" >> $GITHUB_ENV
 
       #
       # checkout our git tree
@@ -105,6 +99,7 @@ jobs:
       #
       - name: setup selected environment
         run: |
+          printenv | fgrep CI_
           sudo apt-get update
           sudo apt-get install -y $CI_COMPILER
           compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
