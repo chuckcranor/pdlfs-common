@@ -31,29 +31,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [RelWithDebInfo]
+        build_type: [Debug, RelWithDebInfo]
         compiler: [gcc-9, gcc-10, clang-10, clang-11]
-        mpi: [mpich, openmpi]
         os: [ubuntu-latest]
-        # add some debug cases.  XXX: include/exclude don't take lists
-        # so we have to expand each case out.  yuck.
-        include:
-          - build_type: Debug
-            compiler: gcc-9
-            mpi: mpich
-            os: ubuntu-latest
-          - build_type: Debug
-            compiler: gcc-10
-            mpi: mpich
-            os: ubuntu-latest
-          - build_type: Debug
-            compiler: clang-10
-            mpi: mpich
-            os: ubuntu-latest
-          - build_type: Debug
-            compiler: clang-11
-            mpi: mpich
-            os: ubuntu-latest
+        # can add include / exclude below to refine the matrix
 
     # what os to run on (reference matrix above for this)
     runs-on: ${{ matrix.os }}
@@ -62,7 +43,6 @@ jobs:
     env:
       CI_BUILDTYPE: ${{ matrix.build_type }}
       CI_COMPILER: ${{ matrix.compiler }}
-      CI_MPI: ${{ matrix.mpi }}
 
     # sequential set of steps (i.e. commands) for this job
     steps:
@@ -72,7 +52,7 @@ jobs:
       #
       - name: display selected environment config
         run: |
-          echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
+          echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER"
           cicc=$CI_COMPILER
           cicompbase=`echo $cicc | sed -e 's/-.*//'`
           if [ "$cicompbase" = "gcc" ]; then
@@ -94,7 +74,8 @@ jobs:
 
       #
       # set up environment using apt-get to install packages we need
-      # but don't build ourselves
+      # but don't build ourselves.   we need an MPI installed to
+      # configure deltafs-umbrella, but we don't really use it here.
       #
       # note: clang includes C++, but g++ is its own package.
       # XXX: run did not like /bin/sh case statement (syntax err, quoting?)
@@ -106,12 +87,8 @@ jobs:
           if [ "$CI_COMPBASE" = "gcc" ]; then
             sudo apt-get install -y $CI_CXX
           fi
-          if [ "$CI_MPI" = "openmpi" ]; then
-            sudo apt-get install -y ${CI_MPI}-bin lib${CI_MPI}-dev
-          else
-            sudo apt-get install -y $CI_MPI lib${CI_MPI}-dev
-          fi
           sudo apt-get install -y cmake automake
+          sudo apt-get install -y mpich libmpich-dev
           sudo apt-get install -y libibverbs-dev libibverbs-dev
           sudo apt-get install -y libpapi-dev libnuma-dev
           sudo apt-get install -y librados-dev
@@ -125,7 +102,6 @@ jobs:
           automake --version
           cmake --version
           git --version
-          mpirun --version
           printenv | egrep '^CI_'
 
       #
@@ -147,14 +123,14 @@ jobs:
       # we build umbrella packages with the default system provided compiler.
       # for the key we use:
       #    - target OS
-      #    - target MPI
+      #    - hash of umbrella CMakeLists.txt (e.g. to rebuild on change)
       #
       - name: umbrella cache restore
         uses: actions/cache@v2
         id: cache-umbrella
         with:
           path: /tmp/cache
-          key: ${{ runner.os }}-${{ matrix.mpi }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-c1
+          key: ${{ runner.os }}-${{ hashFiles('gh-tmp/deltafs-umbrella/CMakeLists.txt') }}-c1
 
       #
       # on a cache miss, build the specified umbrella packages.  we can
