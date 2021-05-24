@@ -73,17 +73,18 @@ jobs:
       - name: display selected environment config
         run: |
           echo "build=$CI_BUILDTYPE  compiler=$CI_COMPILER  mpi=$CI_MPI"
-          compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
+          cicc=$CI_COMPILER
+          compbase=`echo $cicc | sed -e 's/-.*//'`
           if [ "$compbase" = "gcc" ]; then
-            cxx=`echo $CI_COMPILER| sed -e 's/^gcc/g++/'`
+            cicxx=`echo $cicc | sed -e 's/^gcc/g++/'`
           elif [ "$compbase" = "clang" ]; then
-            cxx=`echo $CI_COMPILER| sed -e 's/^clang/clang++/'`
+            cicxx=`echo $cicc | sed -e 's/^clang/clang++/'`
           else
             echo "compbase error $compbase - unknown compiler"
           fi
-          echo "CI_CC=$CI_COMPILER" >> $GITHUB_ENV
-          echo "CI_CXX=$cxx"        >> $GITHUB_ENV
-          echo "cxx=$cxx"
+          echo "CI_CC=$cicc"    >> $GITHUB_ENV
+          echo "CI_CXX=$cicxx"  >> $GITHUB_ENV
+          echo "cxx=$cicxx"
 
       #
       # checkout our git tree
@@ -100,7 +101,6 @@ jobs:
       #
       - name: setup selected environment
         run: |
-          printenv | fgrep CI_
           sudo apt-get update
           sudo apt-get install -y $CI_COMPILER
           compbase=`echo $CI_COMPILER | sed -e 's/-.*//'`
