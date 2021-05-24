@@ -79,10 +79,11 @@ jobs:
           elif [ "$compbase" = "clang" ]; then
             cxx=`echo $CI_COMPILER| sed -e 's/^clang/clang++/'`
           else
-            echo "compbase error $compbase - this cannot happen"
+            echo "compbase error $compbase - unknown compiler"
           fi
-          echo "CI_CC=\"$CI_COMPILER\"" >> $GITHUB_ENV
-          echo "CI_CXX=\"$cxx\"" >> $GITHUB_ENV
+          echo "CI_CC=$CI_COMPILER" >> $GITHUB_ENV
+          echo "CI_CXX=$cxx"        >> $GITHUB_ENV
+          echo "cxx=$cxx"
 
       #
       # checkout our git tree
