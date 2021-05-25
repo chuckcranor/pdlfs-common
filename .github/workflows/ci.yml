@@ -175,8 +175,7 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX=/tmp/pdlfs-common \
                 -DCMAKE_PREFIX_PATH=/tmp/cache \
                 -DCMAKE_BUILD_TYPE="$CI_BUILDTYPE" \
-                -DPDLFS_DFS_COMMON=OFF \
-                -DPDLFS_MERCURY_RPC=OFF \
+                -DPDLFS_MERCURY_RPC=ON \
                 -DPDLFS_RADOS=ON \
                 -DBUILD_SHARED_LIBS=ON \
                 -DBUILD_TESTS=ON ..
